@@ -1,11 +1,24 @@
 const { generateTag } = require('../utils/TagGenerator');
 const db = require('../models');
 const Room = db.activity;
+function tryParseJSONObject(jsonString) {
+  try {
+    let o = JSON.parse(jsonString);
+
+    if (o && typeof o === 'object') {
+      return o;
+    }
+  } catch (e) {}
+
+  return false;
+}
 
 exports.findRoom = async (req, res) => {
+  // console.log(req.query);
   if (!req.query.roomKey) {
     try {
       const isRoomAvail = await Room.find({}).select('title options roomKey');
+      console.log(isRoomAvail);
       res.status(200).send(isRoomAvail);
     } catch (error) {}
   } else {
@@ -13,26 +26,26 @@ exports.findRoom = async (req, res) => {
       const isRoomAvail = await Room.findOne({
         roomKey: req.query.roomKey,
       }).select('title options roomKey');
+      console.log(isRoomAvail);
       res.status(200).send(isRoomAvail);
     } catch (error) {}
   }
 };
 
 exports.createRoom = async (req, res) => {
-  if (!req.body.title || !req.body.options) {
-    res.status(401).send({ message: "Body can't be empty" });
-  }
-  let roomKeyCreated;
-  //   options:req.body.options
+  const { title, options } = req.body;
+  // console.log(options);
+  // res.status(200).send({ roomKey: 'Null' });
   const newRoom = new Room({
-    title: req.body.title,
-    options: req.body.options,
+    title: title,
+    options: tryParseJSONObject(options),
   });
+
   let roomKey = generateTag(5);
   newRoom.roomKey = roomKey;
 
   await Room.create(newRoom).then((data) => {
-    res.status(201).send({ roomKey: newRoom.roomKey });
+    res.send({ roomKey: newRoom.roomKey });
   });
 };
 
